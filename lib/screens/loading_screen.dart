@@ -51,6 +51,13 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
   Future<void> _runLoadSequence() async {
     final stopwatch = Stopwatch()..start();
 
+    // Warm up the loading screen's own background art first — it's a large
+    // image, and without precaching it the "Loading" text/bar paint on the
+    // very first frame while the artwork is still decoding, showing a bare
+    // dark screen for a moment before the picture pops in.
+    await _precache(Assets.verticalLoading);
+    await _precache(Assets.horizontalLoading);
+
     await _setProgress(0.05);
     await StorageService.init();
 
@@ -130,7 +137,21 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
           return Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(asset, fit: BoxFit.cover),
+              Image.asset(
+                asset,
+                fit: BoxFit.cover,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) return child;
+                  // Fade the art in once it finishes decoding instead of
+                  // popping in abruptly over the plain dark background.
+                  return AnimatedOpacity(
+                    opacity: frame == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    child: child,
+                  );
+                },
+              ),
               Align(
                 alignment: const Alignment(0, 0.62),
                 child: _LoadingBar(progress: _progress, dotCount: _dotCount, launching: _launching),
