@@ -16,7 +16,6 @@ import 'webview_screen.dart';
 // ─── palette ────────────────────────────────────────────────────────────────
 const _kCyan   = Color(0xFF29E8FF);
 const _kGold   = Color(0xFFFFD84D);
-const _kBlue   = Color(0xFF1A2E6E);
 const _kBg     = Color(0xFF050914);
 
 class MainMenuScreen extends StatefulWidget {

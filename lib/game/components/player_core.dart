@@ -13,14 +13,10 @@ class PlayerCore extends PositionComponent with HasGameReference<FluxGame> {
   double radius = 30;
   double invulnTimer = 0;
 
-  // expansion ring that travels outward from the core on spawn / revival
-  double _ringAge = 0.0;
-
   @override
   void update(double dt) {
     super.update(dt);
     if (invulnTimer > 0) invulnTimer -= dt;
-    _ringAge += dt;
   }
 
   @override
