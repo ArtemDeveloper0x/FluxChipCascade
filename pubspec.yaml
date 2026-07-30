@@ -17,6 +17,9 @@ dependencies:
   shared_preferences: ^2.5.5
   webview_flutter: ^4.14.1
 
+dependency_overrides:
+  objective_c: ^9.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
