@@ -43,4 +43,27 @@ post_install do |installer|
       config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
     end
   end
+
+  # Re-sign all embedded Flutter frameworks (fixes objective_c.framework 0xe8008014)
+  user_project = installer.aggregate_targets.first.user_project
+  user_project.targets.each do |target|
+    next unless target.name == 'Runner'
+    next if target.build_phases.any? { |p| p.respond_to?(:name) && p.name == '[Flutter] Re-sign Frameworks' }
+
+    phase = target.new_shell_script_build_phase('[Flutter] Re-sign Frameworks')
+    phase.shell_script = <<~'SCRIPT'
+      set -e
+      FRAMEWORKS_DIR="${CODESIGNING_FOLDER_PATH}/Frameworks"
+      if [ -d "$FRAMEWORKS_DIR" ]; then
+        find "$FRAMEWORKS_DIR" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) | while read fw; do
+          codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" \
+            --timestamp=none \
+            --preserve-metadata=identifier,entitlements,flags \
+            "$fw"
+        done
+      fi
+    SCRIPT
+    phase.run_only_for_deployment_postprocessing = '0'
+  end
+  user_project.save
 end
