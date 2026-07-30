@@ -94,6 +94,12 @@ class BossEntity extends PositionComponent with HasGameReference<FluxGame> {
 
   void _resolveContact(double dt) {
     final satellites = game.orbitManager.satellites;
+    // Contact damage the orbit deals to the boss each second. This makes the
+    // player's positioning and orbit size matter in boss fights — grind the
+    // boss by sweeping your satellites across it, not just the auto-cannon.
+    final orbitDps = 26.0 *
+        game.runState.damageMult *
+        game.runState.eventDamageMult;
     bool touchedAny = false;
     for (final sat in List.of(satellites)) {
       if (sat.isDisabled) continue;
@@ -101,6 +107,7 @@ class BossEntity extends PositionComponent with HasGameReference<FluxGame> {
       if (d < sat.radius + radius) {
         touchedAny = true;
         sat.takeDamage(damage * dt);
+        takeDamage(orbitDps * dt);
       }
     }
     if (!touchedAny && satellites.isEmpty) {

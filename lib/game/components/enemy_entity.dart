@@ -53,9 +53,15 @@ class EnemyEntity extends PositionComponent with HasGameReference<FluxGame> {
     if (dying) return;
     if (hitFlash > 0) hitFlash -= dt;
 
-    final speedMult = game.runState.eventSpeedMult;
     final toPlayer = game.player.position - position;
     final dist = toPlayer.length;
+
+    // Temporal Field: enemies caught inside the aura crawl.
+    double speedMult = game.runState.eventSpeedMult;
+    final slow = game.runState.slowFieldStrength;
+    if (slow > 0 && dist < 300) {
+      speedMult *= (1.0 - slow).clamp(0.25, 1.0);
+    }
 
     switch (type) {
       case EnemyType.hunter:

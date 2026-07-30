@@ -70,17 +70,18 @@ List<LevelConfig> _generate() {
     final locationIndex = (level - 1) ~/ 8; // 0..4
     final progress = (level - 1) / 39.0; // 0..1 overall difficulty curve
 
-    final waveCount = 3 + (level ~/ 4); // 3 .. ~13, slightly shorter runs
+    final waveCount = 4 + (level ~/ 3); // 4 .. ~17, a clearer arc per run
     // Gentle difficulty curve so runs are comfortably winnable, paired with the
     // player's Pulse Cannon and sturdier orbit.
     final enemyHpMult = 1.0 + progress * 1.8;
     final enemyDamageMult = 1.0 + progress * 1.1;
     final enemySpeedMult = 1.0 + progress * 0.45;
-    final spawnInterval = (2.2 - progress * 1.7).clamp(0.35, 2.2);
-    // Plenty of total enemies per wave for dynamics, but the on-screen count is
-    // capped so we never overload the device (each entity draws a blur glow).
-    final maxConcurrent = (12 + (level * 0.7)).round().clamp(12, 26);
-    final enemiesPerWave = (6 + (level * 1.0)).round();
+    final spawnInterval = (1.6 - progress * 1.25).clamp(0.28, 1.6);
+    // Dense, readable swarms: on-screen count is capped so we never overload the
+    // device (each entity draws a blur glow), but the caps are much higher now so
+    // even early levels feel like a real battle instead of a stroll.
+    final maxConcurrent = (20 + (level * 1.3)).round().clamp(20, 44);
+    final enemiesPerWave = (11 + (level * 1.7)).round();
     final isFinale = level % 8 == 0;
     final areaBoss = _bossRotation[locationIndex % _bossRotation.length];
     final bossHpMult = (1.0 + progress * 2.2) * (isFinale ? 1.4 : 1.0);

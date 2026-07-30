@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/storage_service.dart';
 import '../core/theme.dart';
 import '../game/data/event_data.dart';
 import '../game/data/level_data.dart';
@@ -25,6 +26,8 @@ class _GameScreenState extends State<GameScreen> {
   _OverlayMode _mode = _OverlayMode.none;
   List<int> _upgradeIndexes = [];
   GameEventDef? _eventBanner;
+  bool _showObjective = false;
+  bool _showTutorial = false;
 
   late final FluxGameCallbacks _callbacks;
 
@@ -52,6 +55,15 @@ class _GameScreenState extends State<GameScreen> {
       },
     );
     _game = _buildGame();
+
+    // First-ever run gets a "how to play" card; everyone gets a per-level
+    // objective briefing so the immediate goal is always clear.
+    if (!StorageService.I.tutorialSeen) {
+      _showTutorial = true;
+      _game.pauseEngine();
+    } else {
+      _presentObjective();
+    }
   }
 
   FluxGame _buildGame() => FluxGame(
@@ -60,12 +72,29 @@ class _GameScreenState extends State<GameScreen> {
         callbacks: _callbacks,
       );
 
+  /// Show the objective briefing for a couple of seconds at the start of a
+  /// level without blocking play.
+  void _presentObjective() {
+    _showObjective = true;
+    Future.delayed(const Duration(milliseconds: 3400), () {
+      if (mounted) setState(() => _showObjective = false);
+    });
+  }
+
+  void _dismissTutorial() {
+    StorageService.I.setTutorialSeen();
+    setState(() => _showTutorial = false);
+    _game.resumeEngine();
+    _presentObjective();
+  }
+
   void _restart() {
     setState(() {
       _mode = _OverlayMode.none;
       _eventBanner = null;
       _game = _buildGame();
     });
+    _presentObjective();
   }
 
   /// Advance to the next level in-place (no navigation) so progression is
@@ -77,6 +106,7 @@ class _GameScreenState extends State<GameScreen> {
       _level = levelConfigFor(_level.level + 1);
       _game = _buildGame();
     });
+    _presentObjective();
   }
 
   @override
@@ -100,6 +130,8 @@ class _GameScreenState extends State<GameScreen> {
             // the previous game's resources could linger and pile up between
             // levels, causing the freezes seen after the first win.
             Positioned.fill(child: GameWidget(key: ObjectKey(_game), game: _game)),
+            if (_showObjective && _mode == _OverlayMode.none && !_showTutorial)
+              ObjectiveBanner(level: _level),
             if (_eventBanner != null) EventBanner(event: _eventBanner!),
             GameHud(
               runState: _game.runState,
@@ -126,6 +158,8 @@ class _GameScreenState extends State<GameScreen> {
                 onRestart: _restart,
                 onQuit: () => Navigator.of(context).popUntil((r) => r.isFirst),
               ),
+            if (_showTutorial)
+              TutorialOverlay(onStart: _dismissTutorial),
             if (_mode == _OverlayMode.gameOver || _mode == _OverlayMode.victory)
               EndRunOverlay(
                 victory: _mode == _OverlayMode.victory,

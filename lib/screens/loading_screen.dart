@@ -5,7 +5,7 @@ import '../core/audio_manager.dart';
 import '../core/constants.dart';
 import '../core/storage_service.dart';
 import '../core/theme.dart';
-import 'main_menu_screen.dart';
+import 'main_shell.dart';
 
 /// First screen shown on app start. Free to rotate (art is provided for both
 /// orientations); the horizontal progress bar only reaches 100% right before
@@ -100,7 +100,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+      MaterialPageRoute(builder: (_) => const MainShell()),
     );
   }
 

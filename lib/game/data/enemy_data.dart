@@ -47,8 +47,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 14,
     baseSpeed: 78,
     baseDamage: 6,
-    baseRadius: 20,
-    crystalDrop: 1,
+    baseRadius: 30,
+    crystalDrop: 2,
   ),
   EnemyType.destroyer: EnemyDef(
     type: EnemyType.destroyer,
@@ -58,8 +58,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 60,
     baseSpeed: 34,
     baseDamage: 22,
-    baseRadius: 30,
-    crystalDrop: 3,
+    baseRadius: 46,
+    crystalDrop: 5,
   ),
   EnemyType.sniper: EnemyDef(
     type: EnemyType.sniper,
@@ -69,8 +69,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 18,
     baseSpeed: 42,
     baseDamage: 9,
-    baseRadius: 22,
-    crystalDrop: 2,
+    baseRadius: 33,
+    crystalDrop: 3,
   ),
   EnemyType.magnet: EnemyDef(
     type: EnemyType.magnet,
@@ -80,8 +80,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 30,
     baseSpeed: 46,
     baseDamage: 4,
-    baseRadius: 26,
-    crystalDrop: 2,
+    baseRadius: 39,
+    crystalDrop: 3,
   ),
   EnemyType.kamikaze: EnemyDef(
     type: EnemyType.kamikaze,
@@ -91,8 +91,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 10,
     baseSpeed: 118,
     baseDamage: 26,
-    baseRadius: 18,
-    crystalDrop: 2,
+    baseRadius: 27,
+    crystalDrop: 3,
   ),
   EnemyType.virusBall: EnemyDef(
     type: EnemyType.virusBall,
@@ -102,8 +102,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 22,
     baseSpeed: 52,
     baseDamage: 5,
-    baseRadius: 22,
-    crystalDrop: 2,
+    baseRadius: 33,
+    crystalDrop: 3,
   ),
   EnemyType.swarmer: EnemyDef(
     type: EnemyType.swarmer,
@@ -113,7 +113,7 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 7,
     baseSpeed: 132,
     baseDamage: 3,
-    baseRadius: 15,
+    baseRadius: 22,
     crystalDrop: 1,
   ),
   EnemyType.splitter: EnemyDef(
@@ -124,8 +124,8 @@ const Map<EnemyType, EnemyDef> kEnemyDefs = {
     baseHp: 46,
     baseSpeed: 40,
     baseDamage: 12,
-    baseRadius: 27,
-    crystalDrop: 3,
+    baseRadius: 41,
+    crystalDrop: 5,
   ),
 };
 

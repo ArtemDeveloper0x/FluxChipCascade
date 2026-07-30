@@ -79,6 +79,7 @@ class FluxGame extends FlameGame {
     await sprites.preload();
 
     runState.applyStartingMutation();
+    _applyMetaUpgrades();
     runState.coreMaxHp = (140 * runState.coreHpMult).round();
     runState.coreHp = runState.coreMaxHp;
 
@@ -106,6 +107,16 @@ class FluxGame extends FlameGame {
     waveManager.start();
 
     await audio.playGameplayLoop();
+  }
+
+  /// Applies permanent SHOP (lab module) purchases on top of the run's
+  /// starting mutation. Magnitudes mirror `kLabModules` in lab_data.dart.
+  void _applyMetaUpgrades() {
+    final store = StorageService.I;
+    runState.coreHpMult *= 1 + 0.10 * store.labLevel('hull');
+    runState.startingSatellitesDelta += store.labLevel('bay');
+    runState.cannonDamageMult *= 1 + 0.08 * store.labLevel('cannon');
+    runState.damageMult *= 1 + 0.06 * store.labLevel('core');
   }
 
   void _setupJoystick() {
@@ -263,11 +274,17 @@ class FluxGame extends FlameGame {
     final fireInterval = (0.62 / runState.cannonFireRateMult).clamp(0.18, 1.2);
     _cannonTimer = fireInterval;
 
-    final damage = 15.0 *
+    double damage = 15.0 *
         runState.cannonDamageMult *
         runState.damageMult *
         runState.eventDamageMult *
         (1 + runState.runLevel * 0.06);
+
+    // Critical Flux: roll a crit for the whole volley.
+    final isCrit = rng.nextDouble() < runState.critChance;
+    if (isCrit) damage *= runState.critDamageMult;
+    final boltColor =
+        isCrit ? const Color(0xFFFFD84D) : const Color(0xFF3DE8FF);
 
     final baseDir = (targetPos - player.position);
     if (baseDir.length2 < 0.0001) baseDir.setValues(1, 0);
@@ -280,7 +297,35 @@ class FluxGame extends FlameGame {
         position: player.position.clone(),
         direction: dir,
         damage: damage,
+        color: boltColor,
+        homing: runState.cannonHoming,
+        pierce: runState.cannonPierce,
+        chain: runState.chainLightning,
       ));
+    }
+  }
+
+  /// Chain Conductor: when a bolt hits, arc a weaker strike to a second nearby
+  /// enemy so crowds melt faster.
+  void onProjectileChain(Vector2 origin, double damage, EnemyEntity? exclude) {
+    EnemyEntity? nearest;
+    double best = 260;
+    for (final e in enemies) {
+      if (e.dying || e == exclude) continue;
+      final d = (e.position - origin).length;
+      if (d < best) {
+        best = d;
+        nearest = e;
+      }
+    }
+    if (nearest != null) {
+      nearest.takeDamage(damage * 0.6);
+      world.add(FxBurst(
+          position: (origin + nearest.position) / 2,
+          spriteIndex: rng.nextInt(30),
+          maxRadius: 34,
+          duration: 0.22,
+          color: const Color(0xFF3DE8FF)));
     }
   }
 
@@ -357,6 +402,12 @@ class FluxGame extends FlameGame {
     spheres.remove(sphere);
     sphere.removeFromParent();
     orbitManager.addSatellite();
+    // Restorative Intake: each collected sphere mends the core a little.
+    if (runState.pickupHealAmount > 0 &&
+        runState.coreHp < runState.coreMaxHp) {
+      runState.coreHp = (runState.coreHp + runState.pickupHealAmount.round())
+          .clamp(0, runState.coreMaxHp);
+    }
     audio.sfx(Sounds.sphereJoiningOrbit);
     StorageService.I.addSpheres(1);
     StorageService.I.addDailyQuestProgress('collect_spheres', 1);
@@ -389,6 +440,14 @@ class FluxGame extends FlameGame {
       _spawnSplitterChildren(enemy.position.clone());
     }
 
+    // Vampiric Circuit: kills have a chance to mend the core.
+    if (runState.lifestealChance > 0 &&
+        rng.nextDouble() < runState.lifestealChance &&
+        runState.coreHp < runState.coreMaxHp) {
+      runState.coreHp =
+          (runState.coreHp + 6).clamp(0, runState.coreMaxHp);
+    }
+
     runState.killCount++;
     StorageService.I.addKills(1);
     StorageService.I.addDailyQuestProgress('defeat_enemies', 1);
@@ -397,7 +456,7 @@ class FluxGame extends FlameGame {
       StorageService.I.addDailyQuestProgress('defeat_infected', 1);
     }
 
-    _gainXp((4 + enemy.tier).toDouble());
+    _gainXp(3.0 + enemy.tier * 0.6);
     runState.pushHudUpdate();
   }
 
@@ -507,6 +566,24 @@ class FluxGame extends FlameGame {
     audio.sfx(Sounds.energyImpact, volume: 0.5);
     player.invulnTimer = 0.35;
     _shakeMag = 11.0;
+
+    // Retaliation Field: burst nearby attackers when the core is struck.
+    if (runState.thornsMult > 0) {
+      const retaliationRadius = 180.0;
+      final thornDamage = 26.0 * runState.thornsMult * runState.damageMult;
+      for (final e in List.of(enemies)) {
+        if ((e.position - player.position).length < retaliationRadius) {
+          e.takeDamage(thornDamage);
+        }
+      }
+      world.add(FxBurst(
+          position: player.position.clone(),
+          spriteIndex: rng.nextInt(30),
+          maxRadius: retaliationRadius,
+          duration: 0.4,
+          color: const Color(0xFFFFD84D)));
+    }
+
     runState.pushHudUpdate();
     if (runState.coreHp <= 0) {
       runState.coreHp = 0;
@@ -521,11 +598,13 @@ class FluxGame extends FlameGame {
   }
 
   void _gainXp(double amount) {
-    runState.xp += amount;
+    runState.xp += amount * runState.xpMult;
+    // Steeper curve so level-ups feel like real milestones rather than a
+    // pop-up every few seconds.
     if (runState.xp >= runState.xpToNext) {
       runState.xp -= runState.xpToNext;
       runState.runLevel++;
-      runState.xpToNext *= 1.22;
+      runState.xpToNext *= 1.35;
       audio.sfx(Sounds.levelUp);
       _triggerUpgradeChoice();
     }
@@ -533,8 +612,7 @@ class FluxGame extends FlameGame {
 
   void _triggerUpgradeChoice() {
     pauseEngine();
-    final indexes = List.generate(kAllUpgrades.length, (i) => i)..shuffle(rng);
-    callbacks.onUpgradeChoice(indexes.take(3).toList());
+    callbacks.onUpgradeChoice(pickUpgradeChoices(rng, 3));
   }
 
   void applyChosenUpgrade(int upgradeIndex) {
@@ -657,8 +735,11 @@ class FluxGame extends FlameGame {
     runState.victory = victory;
     pauseEngine();
     audio.stopMusic();
-    StorageService.I.addCrystals(runState.crystalsThisRun +
-        (victory ? level.crystalReward : (level.crystalReward ~/ 3)));
+    final baseReward =
+        victory ? level.crystalReward : (level.crystalReward ~/ 3);
+    final magnet = 1 + 0.12 * StorageService.I.labLevel('magnet');
+    final earned = ((runState.crystalsThisRun + baseReward) * magnet).round();
+    StorageService.I.addCrystals(earned);
     StorageService.I.reportWave(runState.wave);
     if (victory) {
       StorageService.I.unlockLevel(level.level + 1);

@@ -89,6 +89,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
             // logo + orbit ring
             _Enter(_intro, 0.05, 0.55, child: _LogoSection(loop: _loop, size: size)),
 
+            const SizedBox(height: 4),
+
+            // tagline + rotating gameplay tip
+            _Enter(_intro, 0.12, 0.6, child: _TaglineTips(loop: _loop)),
+
             const Spacer(flex: 2),
 
             // PLAY
@@ -425,6 +430,72 @@ class _RingPainter extends CustomPainter {
   }
 
   @override bool shouldRepaint(_RingPainter o) => o.t != t;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAGLINE + ROTATING TIPS – gives the game an identity and teaches basics
+// ═══════════════════════════════════════════════════════════════════════════
+class _TaglineTips extends StatelessWidget {
+  const _TaglineTips({required this.loop});
+  final AnimationController loop;
+
+  static const _tips = [
+    'Fly over spheres to grow your orbit',
+    'Satellites shield you and grind enemies',
+    'Survive the waves, then crush the boss',
+    'Chase rare augments to break the game',
+    'Keep moving — never get surrounded',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('GROW YOUR ORBIT · SURVIVE THE CASCADE',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: _kCyan.withValues(alpha: 0.85),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.6)),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 30,
+          child: AnimatedBuilder(
+            animation: loop,
+            builder: (_, __) {
+              final idx = (loop.value * _tips.length).floor() % _tips.length;
+              final local = (loop.value * _tips.length) % 1.0;
+              // fade each tip in/out within its slot
+              final fade = (local < 0.15)
+                  ? local / 0.15
+                  : (local > 0.85 ? (1 - local) / 0.15 : 1.0);
+              return Opacity(
+                opacity: fade.clamp(0.0, 1.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _kBg.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _kGold.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.lightbulb_outline_rounded,
+                        size: 13, color: _kGold),
+                    const SizedBox(width: 7),
+                    Text(_tips[idx],
+                        style: const TextStyle(
+                            color: AppColors.textPrimary, fontSize: 12)),
+                  ]),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -111,6 +111,22 @@ class StorageService {
 
   int get upgradesUsedUnique => usedUpgradeIds.length;
 
+  // --- Onboarding -----------------------------------------------------
+  bool get tutorialSeen => _prefs.getBool('tutorialSeen') ?? false;
+  Future<void> setTutorialSeen() => _prefs.setBool('tutorialSeen', true);
+
+  // --- Lab / meta-upgrade shop ---------------------------------------
+  // Permanent upgrades bought with crystals. Each module stores a level that
+  // gameplay reads at run start (see FluxGame.onLoad).
+  int labLevel(String id) => _prefs.getInt('lab_$id') ?? 0;
+  Future<void> incLabLevel(String id) =>
+      _prefs.setInt('lab_$id', labLevel(id) + 1);
+
+  // --- Pilot profile --------------------------------------------------
+  String get callsign => _prefs.getString('callsign') ?? 'Pilot-07';
+  Future<void> setCallsign(String v) =>
+      _prefs.setString('callsign', v.trim().isEmpty ? 'Pilot-07' : v.trim());
+
   // --- Settings -----------------------------------------------------
   bool get musicEnabled => _prefs.getBool('musicEnabled') ?? true;
   Future<void> setMusicEnabled(bool v) => _prefs.setBool('musicEnabled', v);

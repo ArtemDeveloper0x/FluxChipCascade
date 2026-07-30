@@ -149,8 +149,16 @@ class WaveManager {
     final basePos = game.player.position +
         Vector2(cos(angle), sin(angle)) * spawnRadius;
 
-    // Swarmers arrive as a small fast-moving pack for extra chaos.
-    final count = type == EnemyType.swarmer ? 2 + _rng.nextInt(2) : 1;
+    // Swarmers arrive as a large fast-moving pack for extra chaos; other basic
+    // enemies occasionally arrive in pairs so the field stays busy and readable.
+    int count;
+    if (type == EnemyType.swarmer) {
+      count = 4 + _rng.nextInt(4); // 4..7
+    } else if (type == EnemyType.hunter && _rng.nextDouble() < 0.5) {
+      count = 2;
+    } else {
+      count = 1;
+    }
     for (int i = 0; i < count; i++) {
       final jitter = Vector2(
         (_rng.nextDouble() - 0.5) * 90,

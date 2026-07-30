@@ -20,6 +20,7 @@ class RunState extends ChangeNotifier {
   double attractRadiusMult = 1.0;
   double sphereSpawnMult = 1.0;
   double critChance = 0.05;
+  double critDamageMult = 1.7;
   double slowFieldStrength = 0.0;
   int extraLayers = 0;
   int startingSatellitesDelta = 0;
@@ -32,12 +33,21 @@ class RunState extends ChangeNotifier {
   bool cometTrail = false;
   bool bonusCrystalDrop = false;
 
+  // New build-defining modifiers (added in the "meaning & depth" pass).
+  double lifestealChance = 0.0; // chance a kill restores core HP
+  double xpMult = 1.0; // faster leveling → more upgrade choices
+  double pickupHealAmount = 0.0; // core HP restored per sphere collected
+  double thornsMult = 0.0; // fraction of core damage reflected to nearby foes
+  bool chainLightning = false; // cannon hits arc to a second enemy
+
   // Core Pulse Cannon: a baseline auto-attack that fires at the nearest
   // hostile, so the player always has a way to deal ranged damage.
   bool cannonEnabled = true;
   double cannonDamageMult = 1.0;
   double cannonFireRateMult = 1.0;
   int cannonExtraShots = 0;
+  bool cannonHoming = false; // bolts steer toward the nearest target
+  int cannonPierce = 0; // bolts pass through this many enemies
 
   // live run stats (surfaced to HUD)
   int coreHp = 100;
@@ -48,7 +58,7 @@ class RunState extends ChangeNotifier {
   int killCount = 0;
   int runLevel = 1; // player level within the run (from XP)
   double xp = 0;
-  double xpToNext = 10;
+  double xpToNext = 26;
   double elapsedSeconds = 0;
   bool bossActive = false;
   String? activeEventName;

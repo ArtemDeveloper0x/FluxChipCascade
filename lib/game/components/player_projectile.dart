@@ -2,11 +2,12 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import '../flux_game.dart';
+import 'enemy_entity.dart';
 
 /// A fast energy bolt fired automatically by the player's core Pulse Cannon.
 /// It flies toward the nearest hostile (enemy or boss) and damages the first
-/// one it touches. This is the player's reliable ranged damage source, making
-/// kiting enemies and bosses actually killable.
+/// one it touches. Upgrades can make it home in on targets, pierce through
+/// several enemies, or arc chain-lightning on impact.
 class PlayerProjectile extends PositionComponent
     with HasGameReference<FluxGame> {
   PlayerProjectile({
@@ -15,6 +16,9 @@ class PlayerProjectile extends PositionComponent
     required this.damage,
     this.speed = 460,
     this.color = const Color(0xFF3DE8FF),
+    this.homing = false,
+    this.pierce = 0,
+    this.chain = false,
   })  : direction = direction.normalized(),
         super(position: position, size: Vector2.all(14), anchor: Anchor.center);
 
@@ -22,7 +26,12 @@ class PlayerProjectile extends PositionComponent
   double speed;
   double damage;
   Color color;
+  bool homing;
+  int pierce;
+  bool chain;
   double life = 2.4;
+
+  final Set<int> _alreadyHit = {};
 
   @override
   void update(double dt) {
@@ -32,6 +41,8 @@ class PlayerProjectile extends PositionComponent
       removeFromParent();
       return;
     }
+
+    if (homing) _steerTowardTarget(dt);
     position += direction * speed * dt;
 
     // Boss takes priority as a target.
@@ -39,19 +50,53 @@ class PlayerProjectile extends PositionComponent
     if (boss != null && !boss.dying) {
       if ((boss.position - position).length < boss.radius + 8) {
         boss.takeDamage(damage);
-        removeFromParent();
+        if (chain) game.onProjectileChain(position.clone(), damage, null);
+        _onImpact(null);
         return;
       }
     }
 
     for (final enemy in List.of(game.enemies)) {
       if (enemy.dying) continue;
+      if (_alreadyHit.contains(identityHashCode(enemy))) continue;
       if ((enemy.position - position).length < enemy.radius + 8) {
         enemy.takeDamage(damage);
-        removeFromParent();
+        if (chain) game.onProjectileChain(position.clone(), damage, enemy);
+        _onImpact(enemy);
         return;
       }
     }
+  }
+
+  void _onImpact(EnemyEntity? enemy) {
+    if (pierce > 0) {
+      pierce--;
+      if (enemy != null) _alreadyHit.add(identityHashCode(enemy));
+      return; // keep flying through
+    }
+    removeFromParent();
+  }
+
+  void _steerTowardTarget(double dt) {
+    Vector2? targetPos;
+    final boss = game.currentBoss;
+    if (boss != null && !boss.dying) {
+      targetPos = boss.position;
+    } else {
+      double best = double.infinity;
+      for (final e in game.enemies) {
+        if (e.dying || _alreadyHit.contains(identityHashCode(e))) continue;
+        final d = (e.position - position).length2;
+        if (d < best) {
+          best = d;
+          targetPos = e.position;
+        }
+      }
+    }
+    if (targetPos == null) return;
+    final desired = (targetPos - position).normalized();
+    // Blend current heading toward the target for a smooth curve.
+    direction = (direction + desired * (dt * 6)).normalized();
   }
 
   @override
